@@ -1,0 +1,223 @@
+###########################################################################
+# Compilation and linking flags
+
+COMMON_CXXFLAGS=-fopencilk -O3 -std=c++20 -march=native -g -gdwarf-4 `pkg-config --cflags catch2-with-main` -I${CONDA_PREFIX}/include
+
+ifeq ($(SPEEDCODE_SERVER), 1)
+	SANDBOX_CXXFLAGS = `/bin/python3 ${UTILS_DIR}/get_copts.py3` -I$(UTILS_DIR)/include
+	OUTPUT_PREFIX = /box
+	SANDBOX_PREFIX = /sandbox
+else
+	UTILS_DIR=../.sandbox_utils
+	SANDBOX_CXXFLAGS = -O3 -I$(UTILS_DIR)/include
+	OUTPUT_PREFIX = .
+	SANDBOX_PREFIX = .
+endif
+
+#GDB_CMD = gdb -batch-silent -ex "run" -ex "bt" --args #gdb --args 
+GDB_CMD = gdb --batch --return-child-result -ex "set print thread-events off" -ex "set print addr off" -ex "thread apply all bt" -ex "run" --args #gdb --args 
+#GDB_CMD = 
+VALGRIND = #taskset -c 0 valgrind --tool=cachegrind --cache-sim=yes  
+CXX=${OPENCILK_COMPILER_DIR}/bin/clang++
+CXXFLAGS=$(COMMON_CXXFLAGS) $(SANDBOX_CXXFLAGS)
+LDFLAGS=-fopencilk `pkg-config --libs catch2-with-main` -lpthread
+
+CILKSAN_CXXFLAGS=-fsanitize=cilk 
+CILKSAN_LDFLAGS=-fsanitize=cilk
+CILKSCALE_CXXFLAGS=-fcilktool=cilkscale
+CILKSCALE_LDFLAGS=-fcilktool=cilkscale
+CILKSCALE_BENCH_CXXFLAGS=-fcilktool=cilkscale-benchmark
+CILKSCALE_BENCH_LDFLAGS=-fcilktool=cilkscale-benchmark
+
+%.cilksan : CXXFLAGS+=$(CILKSAN_CXXFLAGS) -O2 -fno-slp-vectorize -fno-vectorize #-fno-inline-functions
+%olution.o.cilksan : CXXFLAGS+= -O1 -funroll-loops -finline-functions
+%.cilksan : LDFLAGS+=$(CILKSAN_LDFLAGS) -O3
+%.cilkscale : CXXFLAGS+=$(CILKSCALE_CXXFLAGS)
+%.cilkscale : LDFLAGS+=$(CILKSCALE_LDFLAGS)
+%.cilkscale-benchmark : CXXFLAGS+=$(CILKSCALE_BENCH_CXXFLAGS)
+%.cilkscale-benchmark : LDFLAGS+=$(CILKSCALE_BENCH_LDFLAGS)
+
+.PHONY : all clean run tiers correctness run-cilksan run-cilkscale solution.S
+
+REFERENCE_CODES=$(wildcard $(SANDBOX_PREFIX)/solutions/*.cpp)
+REFERENCE_OBJECTS=$(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp, $(SANDBOX_PREFIX)/solutions/%.o, $(REFERENCE_CODES))
+REFERENCE_BINARIES=$(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp, $(SANDBOX_PREFIX)/benchmark_%, $(REFERENCE_CODES))
+
+all: tmp
+	echo "hello world"
+	echo "$(wildcard $(SANDBOX_PREFIX)/solutions/*.cpp)"
+	echo $(REFERENCE_OBJECTS)
+
+
+###########################################################################
+# Rules for building object files from sources
+
+# To avoid rebuilding common library, we assume its prebuilt in a directory sandbox has read access to.
+#$(UTILS_DIR)/lib/nanobench.o.cilksan : $(UTILS_DIR)/include/nanobench.cpp
+#	@mkdir -p $(@D)
+#	$(CXX) $(SANDBOX_CXXFLAGS) -fsanitize=cilk -g -gdwarf-4 -c $^ -o $@
+
+$(UTILS_DIR)/lib/nanobench.o : $(UTILS_DIR)/include/nanobench.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(SANDBOX_CXXFLAGS) -g -c $^ -o $@
+
+$(UTILS_DIR)/lib/nanobench.o.cilksan : $(UTILS_DIR)/include/nanobench.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(SANDBOX_CXXFLAGS) -O1 -g -c $^ -o $@
+
+$(UTILS_DIR)/lib/nanobench.o% : $(UTILS_DIR)/include/nanobench.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(SANDBOX_CXXFLAGS) -g -c $^ -o $@
+
+all_nanobench: $(UTILS_DIR)/lib/nanobench.o $(UTILS_DIR)/lib/nanobench.o.cilksan $(UTILS_DIR)/lib/nanobench.o.cilkscale $(UTILS_DIR)/lib/nanobench.o.cilkscale-benchmark
+	echo "Done"
+
+
+#$(UTILS_DIR)/lib/nanobench.o.cilksan : $(UTILS_DIR)/include/nanobench.cpp
+#	@mkdir -p $(@D)
+#	$(CXX) $()$(SANDBOX_CXXFLAGS) -fopencilk $(CILKSAN_CXXFLAGS) -std=c++20 -O3 -g -c $^ -o $@
+#
+#$(UTILS_DIR)/lib/nanobench.o.cilkscale : $(UTILS_DIR)/include/nanobench.cpp
+#	@mkdir -p $(@D)
+#	$(CXX) $(SANDBOX_CXXFLAGS) -fopencilk $(CILKSCALE_CXXFLAGS) -std=c++20 -O3 -g -c $^ -o $@
+
+$(OUTPUT_PREFIX)/%.o : $(SANDBOX_PREFIX)/%.cpp
+	$(CXX) $^ -c $(CXXFLAGS) -o $@
+
+$(OUTPUT_PREFIX)/%_analysis : $(SANDBOX_PREFIX)/%.cpp
+	#echo "####################################" >& 2
+	#echo "####### Vectorization Report #######" >& 2
+	#echo "####################################" >& 2
+	$(CXX) $^ -c $(CXXFLAGS) -Rpass=vector -Rpass-analysis=vector -Rpass-analysis=loop-vector -Rpass-missed=loop-vector -o $@.o.ignore 2> $@.report_vector 1> /dev/null
+	objdump -dlS $@.o.ignore 1> $@.assembly
+	#$(CXX) solution.cpp -S -masm=intel $(CXXFLAGS) -o $@.assembly
+
+solution_analysis : $(OUTPUT_PREFIX)/solution_analysis
+	echo ""
+	#echo "" >& 2
+	#echo "" >& 2
+	#echo "####################################" >& 2
+	#echo "#### Correctness and Benchmarks ####" >& 2
+	#echo "####################################" >& 2
+	#echo "" >& 2
+	#$(CXX) solution.cpp -S -masm=intel $(CXXFLAGS) -o $@.assembly
+	#$(CXX) solution.cpp -S -emit-llvm -masm=intel $(CXXFLAGS) -o $@.ll
+
+$(OUTPUT_PREFIX)/%.o.cilksan : $(SANDBOX_PREFIX)/%.cpp
+	$(CXX) $^ -c $(CXXFLAGS) -o $@
+
+$(OUTPUT_PREFIX)/%.o.cilkscale : $(SANDBOX_PREFIX)/%.cpp
+	$(CXX) $^ -c $(CXXFLAGS) -o $@
+
+$(OUTPUT_PREFIX)/%.o.cilkscale-benchmark : $(SANDBOX_PREFIX)/%.cpp
+	$(CXX) $^ -c $(CXXFLAGS) -o $@
+
+$(OUTPUT_PREFIX)/solutions/%.o : $(SANDBOX_PREFIX)/solutions/%.cpp
+	$(CXX) $^ -I$(SANDBOX_PREFIX) -c $(CXXFLAGS) -o $@
+###########################################################################
+# Rules for builing executables from object files
+
+$(OUTPUT_PREFIX)/tmp : $(OUTPUT_PREFIX)/driver.o $(OUTPUT_PREFIX)/solution.o $(UTILS_DIR)/lib/nanobench.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+
+$(OUTPUT_PREFIX)/benchmark_% : $(OUTPUT_PREFIX)/driver.o $(OUTPUT_PREFIX)/solutions/%.o $(UTILS_DIR)/lib/nanobench.o
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+$(OUTPUT_PREFIX)/tmp% : $(OUTPUT_PREFIX)/driver.o% $(OUTPUT_PREFIX)/solution.o% $(UTILS_DIR)/lib/nanobench.o%
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+###########################################################################
+# Phony rules for running different tests
+
+
+$(OUTPUT_PREFIX)/inputschema.cpp : ${SANDBOX_PREFIX}/input_schema/schema.py
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib python -m sandbox_utils.input_utils.schemajson 
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib quicktype -s schema ${SANDBOX_PREFIX}/input_schema/schema.json -o ${SANDBOX_PREFIX}/inputschema.cpp --no-boost --include-location global-include --code-format with-struct
+
+schema: $(OUTPUT_PREFIX)/inputschema.cpp
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib python -m sandbox_utils.input_utils.schema_description_text 
+	echo "Done"
+
+
+custom: $(OUTPUT_PREFIX)/tmp
+	SPEEDCODE_PRINT_OUTPUT=1 LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib ${GDB_CMD} $(OUTPUT_PREFIX)/tmp [custom] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+
+
+run : $(OUTPUT_PREFIX)/tmp
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp ${EXTRA_ARGUMENTS}
+
+tiers : $(OUTPUT_PREFIX)/tmp
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp `python ${UTILS_DIR}/get_tier_benchmarks.py` --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+
+benchmark_solution: $(OUTPUT_PREFIX)/tmp
+	DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(VALGRIND) $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` python -m sandbox_utils.combine_benchmark_results $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,%,$(REFERENCE_CODES)) submission
+
+benchmark: run_all_benchmarks $(OUTPUT_PREFIX)/tmp
+	DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(VALGRIND) $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+	#DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` python -m sandbox_utils.combine_benchmark_results $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,%,$(REFERENCE_CODES)) submission
+
+kcachegrind: 
+	DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib /usr/bin/kcachegrind 
+
+
+get_training_data: benchmark
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` python -m sandbox_utils.cachegrind_parser /home/tfk/speedcode-proto/training_data_test 
+	
+
+
+
+compile_all_benchmarks: $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,$(OUTPUT_PREFIX)/benchmark_%, $(REFERENCE_CODES))
+	echo $^
+
+run_benchmark_%: $(OUTPUT_PREFIX)/benchmark_%
+	#DYNAMIC_BENCHMARK_NAME=$(patsubst $(OUTPUT_PREFIX)/benchmark_%,benchmark_%,$^) LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(patsubst benchmark_%,./benchmark_%, $^) [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+	DYNAMIC_BENCHMARK_NAME=$(patsubst $(OUTPUT_PREFIX)/benchmark_%,benchmark_%,$^) LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(VALGRIND) $(patsubst benchmark_%,./benchmark_%, $^) [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+
+run_all_benchmarks: $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,run_benchmark_%, $(REFERENCE_CODES))
+	echo "$(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp, run_benchmark_%, $(REFERENCE_CODES))"
+
+run_correctness_% : $(OUTPUT_PREFIX)/benchmark_%
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib ${GDB_CMD} $(patsubst benchmark_%,./benchmark_%, $^) [correctness] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+
+
+run_all_correctness: $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,run_correctness_%,$(REFERENCE_CODES))
+	echo "$(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,correctness_%, $(REFERENCE_CODES))"
+
+
+#correctness : $(OUTPUT_PREFIX)/solution_analysis $(OUTPUT_PREFIX)/tmp
+correctness : $(OUTPUT_PREFIX)/tmp
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib ${GDB_CMD} $(OUTPUT_PREFIX)/tmp [correctness] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+
+
+run-cilksan : $(OUTPUT_PREFIX)/tmp.cilksan
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp.cilksan [cilksan] -o cilksan-catch2.out 1> cilksan-report.out 2> cilksan-report.err
+
+run-ldd : $(OUTPUT_PREFIX)/tmp.cilksan
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib ldd $(OUTPUT_PREFIX)/tmp.cilksan
+
+run-cilkscale : $(OUTPUT_PREFIX)/tmp.cilkscale
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp.cilkscale [cilkscale] #${EXTRA_ARGUMENTS}
+
+run-cilkscale-benchmark : $(OUTPUT_PREFIX)/tmp.cilkscale-benchmark $(OUTPUT_PREFIX)/tmp.cilkscale
+	#LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp [cilkscale] #${EXTRA_ARGUMENTS}
+	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib python ${UTILS_DIR}/Cilkscale_vis/cilkscale.py --cilkscale '${OUTPUT_PREFIX}/tmp.cilkscale [cilkscale]' --cilkscale-benchmark='${OUTPUT_PREFIX}/tmp.cilkscale-benchmark [cilkscale]' --output-plot='${OUTPUT_PREFIX}/output-cilkscale.svg' --output-csv='${OUTPUT_PREFIX}/output-cilkscale-benchmark.csv' --cpu-counts 1,2,4,8
+
+internal-test :
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` ${UTILS_DIR}/internal_test.sh
+internal-test-serial :
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` ${UTILS_DIR}/internal_test_serial.sh
+
+submit :
+	make clean
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` ${UTILS_DIR}/submit.sh
+
+
+clean :
+	rm -f $(OUTPUT_PREFIX)/benchmark_*.json $(OUTPUT_PREFIX)/%.o $(OUTPUT_PREFIX)/*.o* $(OUTPUT_PREFIX)/tmp $(OUTPUT_PREFIX)/tmp.* ${OUTPUT_PREFIX}/result.tap  ${OUTPUT_PREFIX}/result.xml ${OUTPUT_PREFIX}/tier*.json cilksan-output.txt cilksan-report.err cilksan-report.out benchmark_results.json cilkscale-data.json output-cilkscale-benchmark.csv output.txt *~ rm $(REFERENCE_BINARIES)
+	rm -f $(OUTPUT_PREFIX)/solution_analysis.ll
+	rm -f $(OUTPUT_PREFIX)/solution_analysis.S
+	rm -f $(OUTPUT_PREFIX)/solution_analysis.assembly
+	rm -f $(OUTPUT_PREFIX)/solution_analysis.report_vector

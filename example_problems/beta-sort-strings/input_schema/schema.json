@@ -1,0 +1,1 @@
+{"properties": {"strings": {"items": {"type": "string"}, "title": "Strings", "type": "array"}}, "required": ["strings"], "title": "Input", "type": "object"}
