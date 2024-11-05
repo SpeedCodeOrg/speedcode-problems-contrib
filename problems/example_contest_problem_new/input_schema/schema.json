@@ -1,0 +1,1 @@
+{"properties": {"row": {"items": {"type": "integer"}, "title": "Row", "type": "array"}, "col": {"items": {"type": "integer"}, "title": "Col", "type": "array"}, "weight": {"items": {"type": "number"}, "title": "Weight", "type": "array"}}, "required": ["row", "col", "weight"], "title": "Input", "type": "object"}
