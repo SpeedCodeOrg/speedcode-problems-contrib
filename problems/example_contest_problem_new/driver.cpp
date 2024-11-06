@@ -13,7 +13,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <vector>
-
 #include <nanobench.h>
 
 #include <catch2/catch_test_macros.hpp>
@@ -29,6 +28,7 @@
 namespace Driver {
 
 #include <driver_common.h>
+#include "./get_time.h"
 
 TEST_CASE("Custom", "[custom]") {
   auto inputs = get_custom_inputs();
@@ -99,7 +99,7 @@ TEST_CASE("Cilkscale", "[cilkscale]") {
 
 TEST_CASE("Benchmark", "[benchmark]") {
   auto inputs = get_inputs();
-  auto bencher = get_bencher(5);
+  auto bencher = get_bencher(10,10); // Run for 10 epochs with at least 10 iterations each.
   for (int i = 0; i < inputs.size(); i++) {
      printf("%s\n", std::get<0>(inputs[i]).c_str());
      std::string inp_name = std::get<0>(inputs[i]);
@@ -114,10 +114,27 @@ TEST_CASE("Benchmark", "[benchmark]") {
              benchmark_name = std::string(getenv("DYNAMIC_BENCHMARK_NAME"));
      }
 
-     ProblemInput input(inp_name, inp);
+     uint64_t iter_count = 0;
+     _tm.reset();
+     //std::vector<uint64_t> times(1000000); 
      bencher.run(benchmark_name, [&] {
+       ProblemInput input(inp_name, inp);
+       _tm.start();
        input.run();
+       _tm.stop();
+       //times[iter_count] = _tm.get_total();
+       iter_count += 1;
      });
+     /*for (int i = 0 ; i < iter_count; i++) {
+        double time_sec = (times[i]*1e-9)/(i+1);// / iter_count;
+        double time_nansec = (times[i]*1.0)/(i+1);// / iter_count;
+
+        printf("Total time %d: %f sec, %f nanoseconds\n", i, time_sec, time_nansec);
+     }*/
+     double time_sec = (_tm.get_total()*1e-9) / iter_count;
+     double time_nansec = (_tm.get_total()*1.0) / iter_count;
+
+     printf("Total time: %f sec, %f nanoseconds\n", time_sec, time_nansec);
   }
 
   export_benchmark_results(bencher);

@@ -1,9 +1,10 @@
-#include "solution.hpp"
+#include "solution_ref.hpp"
 #include <cilk/cilk.h>
 #include <cmath>
 #include <queue>
 #include <vector>
 
+namespace reference {
 typedef std::pair<weight_type, vidType> WN;
 
 class Graph : public BaseGraph {
@@ -47,3 +48,5 @@ class Graph : public BaseGraph {
 BaseGraph* initialize_graph(eidType* rowptr, vidType* col, weight_type* weights, uint64_t N, uint64_t M) {
     return new Graph(rowptr, col, weights, N, M);
 }
+
+} // end namespace reference.

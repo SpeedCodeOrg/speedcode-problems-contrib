@@ -5,18 +5,11 @@
 #include <sstream>
 #include <memory>
 #include <vector>
-
-// Reference solution for correctness test.
-__attribute__((weak))
-std::vector<std::string> reference_solution(std::vector<std::string> input) {
-    std::sort(input.begin(), input.end());
-    return input;
-}
+#include "solution_ref.hpp"
 
 class ProblemInput {
-    std::vector<std::string> strings;
-    ankerl::nanobench::Rng rng;
-
+    std::string inp_name;
+    quicktype::Inputschema input;
     uint64_t N;
     uint64_t M;
     eidType* rowptr;
@@ -27,7 +20,9 @@ class ProblemInput {
     std::vector<std::vector<weight_type>> distances;
     BaseGraph* graph;
 public:
-    ProblemInput(std::string inp_name, quicktype::Inputschema& input) {
+    ProblemInput(std::string inp_name, quicktype::Inputschema& _input, decltype(initialize_graph) init = initialize_graph) {
+        inp_name = inp_name;
+        input = _input;
         // convert COO form to CSR format.
         N = input.row[0];
         for (int64_t i = input.row.size(); --i >= 0;) {
@@ -52,7 +47,12 @@ public:
         for (size_t i = 1; i < N+1; i++) {
             rowptr[i] += rowptr[i-1];
         }
-        graph = initialize_graph(rowptr, col, weights, N, M);
+        graph = init(rowptr, col, weights, N, M);
+        
+        for (int i = 0; i < 10; i++) {
+            queries.push_back(i);
+            distances.emplace_back(N, std::numeric_limits<weight_type>::max());
+        }
     }
 
     ~ProblemInput() {
@@ -62,44 +62,30 @@ public:
         delete graph;
     }
 
-    //auto setup(decltype(initialize_graph) init = initialize_graph) {
-    //    graph = init(rowptr, col, weights, N, M);
-    //    
-    //    distances.clear();
-    //    queries.clear();
-    //    for (int i = 0; i < 10; i++) {
-    //        queries.push_back(i);
-    //        distances.emplace_back(N, std::numeric_limits<weight_type>::max());
-    //    }
-    //}
-
     auto run() {
-        distances.clear();
-        queries.clear();
-        for (int i = 0; i < 10; i++) {
-            queries.push_back(i);
-            distances.emplace_back(N, std::numeric_limits<weight_type>::max());
-        }
-
         for (int i = 0; i < queries.size(); i++) {
             graph->SSSP(queries[i], distances[i].data());
         }
         return true;
     }
 
+    //bool approximatelyEqual(weight_type a, weight_type a_ref, double absError = 1e-7, double relError = 1e-9) {
+    bool approximatelyEqual(weight_type a, weight_type a_ref, double absError = 1e-7, double relError = 1e-9) {
+        if (fabs(a-a_ref) <= absError || fabs(a-a_ref) <= a_ref*relError) return true;
+        return false;
+    }
     std::optional<std::string> check() {
-        auto result = run();
-        //auto result_ref = reference.run();
-
-        //if (result.size() != result_ref.size()) return "Error: result of incorrect size";
-
-        //for (size_t i = 0; i < result.size(); i++) {
-        //    if (result[i] != result_ref[i]) {
-        //        return "Incorrect value at index " + std::to_string(i) + 
-        //               ". Expected: " + result_ref[i] + 
-        //               ", Actual: " + result[i];
-        //    }
-        //}
+        run();
+        ProblemInput reference = ProblemInput(inp_name, input, reference::initialize_graph);
+        reference.run();
+        for (int64_t i = 0; i < distances.size(); i++) {
+            if (distances[i].size() != reference.distances[i].size()) return "Incorrect # queries in distance array";
+            for (int64_t j = 0; j < distances[i].size(); j++) {
+                if (!approximatelyEqual(distances[i][j], reference.distances[i][j])) {
+                    return "Incorrect value, expected distance " + std::to_string(reference.distances[i][j]) + ", but got " + std::to_string(distances[i][j]);
+                }
+            }
+        }
         return std::nullopt;
     }
 };

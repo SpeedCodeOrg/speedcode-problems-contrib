@@ -121,14 +121,14 @@ $(OUTPUT_PREFIX)/solutions/%.o : $(SANDBOX_PREFIX)/solutions/%.cpp
 ###########################################################################
 # Rules for builing executables from object files
 
-$(OUTPUT_PREFIX)/tmp : $(OUTPUT_PREFIX)/driver.o $(OUTPUT_PREFIX)/solution.o.submission $(UTILS_DIR)/lib/nanobench.o
+$(OUTPUT_PREFIX)/tmp : $(OUTPUT_PREFIX)/driver.o $(OUTPUT_PREFIX)/solution.o.submission $(OUTPUT_PREFIX)/solution_ref.o $(UTILS_DIR)/lib/nanobench.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 
-$(OUTPUT_PREFIX)/benchmark_% : $(OUTPUT_PREFIX)/driver.o $(OUTPUT_PREFIX)/solutions/%.o $(UTILS_DIR)/lib/nanobench.o
+$(OUTPUT_PREFIX)/benchmark_% : $(OUTPUT_PREFIX)/driver.o $(OUTPUT_PREFIX)/solutions/%.o $(OUTPUT_PREFIX)/solution_ref.o $(UTILS_DIR)/lib/nanobench.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-$(OUTPUT_PREFIX)/tmp% : $(OUTPUT_PREFIX)/driver.o% $(OUTPUT_PREFIX)/solution.o% $(UTILS_DIR)/lib/nanobench.o%
+$(OUTPUT_PREFIX)/tmp% : $(OUTPUT_PREFIX)/driver.o% $(OUTPUT_PREFIX)/solution.o% $(OUTPUT_PREFIX)/solution_ref.o% $(UTILS_DIR)/lib/nanobench.o%
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 ###########################################################################
