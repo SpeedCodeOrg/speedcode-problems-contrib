@@ -140,7 +140,7 @@ $(OUTPUT_PREFIX)/inputschema.cpp : ${SANDBOX_PREFIX}/input_schema/schema.py
 	LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib quicktype -s schema ${SANDBOX_PREFIX}/input_schema/schema.json -o ${SANDBOX_PREFIX}/inputschema.cpp --no-boost --include-location global-include --code-format with-struct
 
 schema: $(OUTPUT_PREFIX)/inputschema.cpp
-	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib python -m sandbox_utils.input_utils.schema_description_text 
+	#PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib python -m sandbox_utils.input_utils.schema_description_text 
 	echo "Done"
 
 

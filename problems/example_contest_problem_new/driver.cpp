@@ -23,11 +23,14 @@
 
 #include "./solution.hpp"
 #include "./inputschema.cpp"
+
+namespace Driver {
+#include <driver_common.h>
+}
+
 #include "./input.hpp"
 
 namespace Driver {
-
-#include <driver_common.h>
 #include "./get_time.h"
 
 TEST_CASE("Custom", "[custom]") {
@@ -98,8 +101,13 @@ TEST_CASE("Cilkscale", "[cilkscale]") {
 }
 
 TEST_CASE("Benchmark", "[benchmark]") {
+
+  _tm2.reset();
+  _tm2.start();
   auto inputs = get_inputs();
-  auto bencher = get_bencher(10,10); // Run for 10 epochs with at least 10 iterations each.
+  _tm2.stop();
+  _tm2.reportTotal("loading the inputs");
+  auto bencher = get_bencher(5,5); // Run for 10 epochs with at least 10 iterations each.
   for (int i = 0; i < inputs.size(); i++) {
      printf("%s\n", std::get<0>(inputs[i]).c_str());
      std::string inp_name = std::get<0>(inputs[i]);
@@ -118,7 +126,11 @@ TEST_CASE("Benchmark", "[benchmark]") {
      _tm.reset();
      //std::vector<uint64_t> times(1000000); 
      bencher.run(benchmark_name, [&] {
+      //_tm2.reset();
+      //_tm2.start();
        ProblemInput input(inp_name, inp);
+       //_tm2.stop();
+       //_tm2.reportTotal("ProblemInput constructor time.");
        _tm.start();
        input.run();
        _tm.stop();

@@ -67,7 +67,7 @@ struct timer {
     std::cout << name << ": ";
     if (str.length() > 0)
       std::cout << str << ": ";
-    std::cout << (time) << std::endl;
+    std::cout << (time*1e-9) << std::endl;
     std::cout.flags(cout_settings);
   }
 

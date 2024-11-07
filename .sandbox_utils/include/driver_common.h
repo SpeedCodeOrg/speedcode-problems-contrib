@@ -49,6 +49,14 @@ std::vector<std::tuple<std::string, quicktype::Inputschema>> get_custom_inputs()
   return std::move(inputs);
 }
 
+std::string get_datafile_path(std::string ref) {
+  std::string path = "./data";
+  if (std::getenv("SPEEDCODE_SERVER") != NULL && std::string(std::getenv("SPEEDCODE_SERVER")).compare("1") == 0) {
+    path = "/sandbox/data";
+  }
+  return path + "/" + ref;
+}
+
 #endif
 
 
