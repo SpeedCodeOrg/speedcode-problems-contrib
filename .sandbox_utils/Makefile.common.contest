@@ -15,6 +15,7 @@ else
 endif
 
 #GDB_CMD = gdb -batch-silent -ex "run" -ex "bt" --args #gdb --args 
+#GDB_CMD = gdb --batch --return-child-result -ex "set print thread-events off" -ex "set print addr off" -ex "thread apply all bt" -ex "run" --args #gdb --args 
 GDB_CMD = gdb --batch --return-child-result -ex "set print thread-events off" -ex "set print addr off" -ex "thread apply all bt" -ex "run" --args #gdb --args 
 #GDB_CMD = 
 VALGRIND = #taskset -c 0 valgrind --tool=cachegrind --cache-sim=yes  

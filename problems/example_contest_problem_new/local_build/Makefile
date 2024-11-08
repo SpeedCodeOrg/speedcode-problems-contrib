@@ -15,9 +15,10 @@ else
 	SANDBOX_PREFIX = $(MAKEFILE_DIR)/../
 endif
 
+CXX=${OPENCILK_COMPILER_DIR}/bin/clang++
 COMMON_CXXFLAGS=-fopencilk -O3 -std=c++20 -march=native -g
 default:
-	clang++ -I$(SANDBOX_PREFIX) $(COMMON_CXXFLAGS) -c $(SANDBOX_PREFIX)/local_build/solution.cpp -o $(OUTPUT_PREFIX)/solution.o.submission
+	$(CXX) -I$(SANDBOX_PREFIX) $(COMMON_CXXFLAGS) -c $(SANDBOX_PREFIX)/local_build/solution.cpp -o $(OUTPUT_PREFIX)/solution.o.submission
 
 clean:
 	rm $(OUTPUT_PREFIX)/solution.o.submission

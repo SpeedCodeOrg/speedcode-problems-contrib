@@ -107,7 +107,7 @@ TEST_CASE("Benchmark", "[benchmark]") {
   auto inputs = get_inputs();
   _tm2.stop();
   _tm2.reportTotal("loading the inputs");
-  auto bencher = get_bencher(5,5); // Run for 10 epochs with at least 10 iterations each.
+  auto bencher = get_bencher(1,1); // Run for 10 epochs with at least 10 iterations each.
   for (int i = 0; i < inputs.size(); i++) {
      printf("%s\n", std::get<0>(inputs[i]).c_str());
      std::string inp_name = std::get<0>(inputs[i]);

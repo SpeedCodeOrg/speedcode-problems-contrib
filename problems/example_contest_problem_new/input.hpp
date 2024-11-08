@@ -60,15 +60,15 @@ public:
         s.read((char*)&N, sizeof(decltype(N)));
         s.read((char*)&M, sizeof(decltype(M)));
 
-        rowptr = (decltype(rowptr)) malloc(sizeof(eidType)*(N+1));
-        col = (decltype(col)) malloc(sizeof(vidType)*M);
-        weights = (decltype(weights)) malloc(sizeof(weight_type)*M);
+        rowptr = new eidType[N+1];//(decltype(rowptr)) malloc(sizeof(eidType)*(N+1));
+        col = new vidType[M];//(decltype(col)) malloc(sizeof(vidType)*M);
+        weights = new weight_type[M];//(decltype(weights)) malloc(sizeof(weight_type)*M);
 
         s.read((char*)rowptr, sizeof(eidType)*(N+1));
         s.read((char*)col, sizeof(vidType)*M);
         s.read((char*)weights, sizeof(weight_type)*M);
         s.close();
-        printf("Successfully deserialized the data. %d, %d\n", N, M);
+        printf("Successfully deserialized the data. %llu, %llu\n", N, M);
     }
 
     ProblemInput(std::string inp_name, quicktype::Inputschema& _input, decltype(initialize_graph) init = initialize_graph) {
@@ -210,11 +210,43 @@ public:
     }
 
     ~ProblemInput() {
-        delete[] rowptr;
-        delete[] col;
-        delete[] weights;
-        delete graph;
+	if (rowptr != NULL) {
+        	delete[] rowptr;
+		rowptr = NULL;
+	}
+	if (col != NULL) {
+        	delete[] col;
+		col = NULL;
+	}
+	if (weights != NULL) {
+        	delete[] weights;
+		weights = NULL;
+	}
+	if (graph != NULL) {
+        	delete graph;
+		graph=NULL;
+	}
     }
+
+    void release_memory_postrun() {
+	if (rowptr != NULL) {
+		delete[] rowptr;
+		rowptr = NULL;
+	}
+	if (col != NULL) {
+		delete[] col;
+		col = NULL;
+	}
+	if (weights != NULL) {
+		delete[] weights;
+		weights = NULL;
+	}
+	if (graph != NULL) {
+		delete graph;
+		graph = NULL;
+	}
+    }
+    
 
     auto run() {
         for (int i = 0; i < queries.size(); i++) {
@@ -229,14 +261,21 @@ public:
     }
 
     std::optional<std::string> check() {
-        ProblemInput reference = ProblemInput(inp_name, input, reference::initialize_graph);
         run();
+	release_memory_postrun();
+	auto reference_distances = distances;
+	{
+        ProblemInput reference = ProblemInput(inp_name, input, reference::initialize_graph);
         reference.run();
+	reference_distances = reference.distances;
+	}
+
+        //ProblemInput reference = ProblemInput(this);
         for (int64_t i = 0; i < distances.size(); i++) {
-            if (distances[i].size() != reference.distances[i].size()) return "Incorrect # queries in distance array";
+            if (distances[i].size() != reference_distances[i].size()) return "Incorrect # queries in distance array";
             for (int64_t j = 0; j < distances[i].size(); j++) {
-                if (!approximatelyEqual(distances[i][j], reference.distances[i][j])) {
-                    return "Incorrect value, expected distance " + std::to_string(reference.distances[i][j]) + ", but got " + std::to_string(distances[i][j]);
+                if (!approximatelyEqual(distances[i][j], reference_distances[i][j])) {
+                    return "Incorrect value, expected distance " + std::to_string(reference_distances[i][j]) + ", but got " + std::to_string(distances[i][j]);
                 }
             }
         }
