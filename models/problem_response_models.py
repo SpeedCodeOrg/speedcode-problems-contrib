@@ -6,6 +6,39 @@ from pydantic.dataclasses import dataclass
 # All problem response models names should have the prefix PRM_ 
 
 
+# input_target : filename.json for the input in inputs/filename.json
+# data_directory: the s3 directory name where the data files are located.
+# data_files: a list of dependent files needed by the benchmark inputs/filename.json
+class PRM_DataManifestItem(BaseModel):
+    input_target: str
+    data_directory: str
+    data_files: List[str]
+
+# quickrun_targets and submission_targets might move elsewhere at some point...
+class PRM_DataManifest(BaseModel):
+    quickrun_targets : List[str]
+    submission_targets : List[str]
+    manifest_items : List[PRM_DataManifestItem]
+
+class PRM_InputManifest(BaseModel):
+    input_targets : List[str]
+    default_run_targets : List[str]
+    allowed_run_targets : List[str]
+    submit_targets : List[str]
+    allowed_cilksan_targets : List[str]
+    default_cilksan_target : str
+    default_cilkscale_target : str
+
+class ProblemData(BaseModel):
+    readme: str
+    source: str
+    compiler_options: str
+    command_line_arguments: str
+    default_custom_input: Optional[str]
+    problem_set_id : Optional[str] = None
+    input_manifest : Optional[PRM_InputManifest] = None
+
+
 class PRM_Compile(BaseModel):
     command: str # Optional["/bin/make -f /sandbox/Makefile SPEEDCODE_SERVER=1 /box/tmp"]
     stdout: str
@@ -56,8 +89,17 @@ class PRM_Benchmark(BaseModel):
     stderr: Optional[str] = None
     tests: PRM_CorrectnessTests
     challenges: List[PRM_BenchmarkResult]
+    reference: Union[PRM_BenchmarkResult, List[PRM_BenchmarkResult]]
+    submission: Union[PRM_BenchmarkResult, List[PRM_BenchmarkResult]]
+
+class PRM_Benchmark_Contest(BaseModel):
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    tests: PRM_CorrectnessTests
+    challenges: List[PRM_BenchmarkResult]
     reference: PRM_BenchmarkResult
     submission: PRM_BenchmarkResult
+
 
 
 class PRM_CilkscaleBenchmarkSeries(BaseModel):
@@ -106,7 +148,7 @@ class PRM_CombinedResponse(BaseModel):
     correctness : Optional[Union[PRM_CorrectnessTests, PRM_Error]] = None
     custom : Optional[Union[PRM_CorrectnessTests, PRM_Error]] = None
     tiers : Optional[Union[PRM_Tiers, PRM_Error]] = None
-    benchmark: Optional[Union[PRM_Benchmark, PRM_Error]] = None
+    benchmark: Optional[Union[PRM_Benchmark, PRM_Benchmark_Contest, PRM_Error]] = None
     cilkscale_benchmark: Optional[Union[PRM_CilkscaleBenchmark, PRM_Error]] = None
     cilksan: Optional[Union[PRM_Cilksan, PRM_Error]] = None
     compiler_analysis: Optional[Union[PRM_CompilerAnalysis, PRM_Error]] = None
@@ -120,10 +162,42 @@ class PRM_ContributeResponse(BaseModel):
     schema_py : Optional[str] = None
     correctness_output : Optional[str] = None
 
+
+class FastCoder_GenerateProblemRequest(BaseModel):
+    request_const_id : str
+    # if s3_url is not none, then its generate solutions.
+    s3_url : Optional[str] = None
+    # If s3_url is none, then method must not be none.
+    # method refers to the problem generation method either codesnippet or description.
+    method : Optional[str] = None
+    prompt: str
+
+
 class ProblemRequest(BaseModel):
     problem_id: int
 
+class FastCoder_GenerateProblemRequest(BaseModel):
+    method : str # "codesnippet", "description"
+    content : str
 
+class FastCoder_GenerateSolutionsRequest(BaseModel):
+    starter_s3_url : str # location of starter code.
+    prompt : str
+
+class FastCoder_RemoteRequest(BaseModel):
+    request_const_id : str
+    s3_url : str # where we upload the finished problem.
+    request : Union[FastCoder_GenerateProblemRequest, FastCoder_GenerateSolutionsRequest]
+
+class FastCoder_RPayload(BaseModel):
+    request_const_id : str
+    status : str
+    problem_title : Optional[str] = None
+    problem_readme : Optional[str] = None
+    problem_source : Optional[str] = None
+    problem_default_custom_input : Optional[str] = None
+    s3_url : Optional[str] = None
+    extra_info : Optional[str] = None
 
 
 @dataclass

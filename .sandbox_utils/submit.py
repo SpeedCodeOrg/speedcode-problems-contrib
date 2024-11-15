@@ -1,6 +1,7 @@
 from defusedxml.ElementTree import parse
 import json
-from models.problem_response_models import PRM_Cilksan
+from models.problem_response_models import PRM_Cilksan, PRM_InputManifest
+from models.models import UserAPIKeysResponse
 from pydantic.json import pydantic_encoder
 from pathlib import Path
 import os
@@ -10,6 +11,7 @@ import tarfile
 import requests
 
 url = "http://speedcode.org/get_presigned_url"
+#url = "http://localhost:3000/get_presigned_url"
 
 # File name for staging area for tarball extraction.
 staging_area = ".tmp_staging_area"
@@ -30,6 +32,9 @@ if __name__ == '__main__':
                 quit()
         problem_info['readme'] = open('README.md').read()
         problem_info['source'] = open('solution.cpp').read()
+        problem_info['default_custom_input'] = open('demo.json').read()
+        #problem_info['input_manifest'] = PRM_InputManifest.parse_raw(open('inputs/INPUT_MANIFEST').read())
+        problem_info['input_manifest'] = open('inputs/INPUT_MANIFEST').read()
         print(problem_info)
          
 
@@ -50,9 +55,17 @@ if __name__ == '__main__':
         #url = "http://localhost:3000/get_presigned_url"
         presigned_url = input('Enter API Key\n > ')
         presigned_url = presigned_url.strip()
-        keys = {'user_const_id' : presigned_url.split("#")[0], 'api_key' : presigned_url.split("#")[1], 'title': problem_info['title'], 'short_description': problem_info['short_description'], 'readme': problem_info['readme'], 'source' : problem_info['source']}
+        keys = {'user_const_id' : presigned_url.split("#")[0],\
+                'api_key' : presigned_url.split("#")[1],\
+                'title': problem_info['title'],\
+                'short_description': problem_info['short_description'],\
+                'readme': problem_info['readme'],\
+                'source' : problem_info['source'],\
+                'default_custom_input' : problem_info['default_custom_input'],\
+                'input_manifest' : problem_info['input_manifest']}
         print(keys)
-        x = requests.post(url, json=keys) 
+        #print(UserAPIKeysResponse.parse_obj(keys).json())
+        x = requests.post(url, json=keys)#str(UserAPIKeysResponse.parse_obj(keys).json())) 
         response = json.loads(x.text)['response']
         if response == "Error":
             print("Error in response")

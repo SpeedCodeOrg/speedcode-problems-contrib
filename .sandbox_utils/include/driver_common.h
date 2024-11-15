@@ -1,4 +1,8 @@
 #include <cilk/cilkscale.h>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <string>
 
 static const char* BENCHMARK_NAME_REFERENCE = "Reference";
 static const char* BENCHMARK_NAME_SUBMISSION = "Submission";
@@ -80,6 +84,24 @@ auto get_bencher(int epochs = 5, int min_epoch_iterations = 4) {
 	  .minEpochTime(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(200)));
 }
 
+static std::vector<std::string> get_input_targets() {
+  auto env_input_targets = getenv("DYNAMIC_INPUT_TARGETS");
+  std::string bench_name;
+  std::vector<std::string> input_targets;
+  if (env_input_targets == NULL) {
+	  //input_targets = "";//"benchmark_" + std::string((char*)BENCHMARK_NAME_SUBMISSION);
+	  return input_targets;
+  } else {
+	 std::istringstream f(env_input_targets);
+	 std::string s;
+	 while (std::getline(f,s,',')) {
+		input_targets.push_back(s);
+	 }
+	 return input_targets;
+         //bench_name = std::string(env_name);
+  }
+
+}
 
 static void export_benchmark_results(ankerl::nanobench::Bench& bencher) {
   auto env_name = getenv("DYNAMIC_BENCHMARK_NAME");

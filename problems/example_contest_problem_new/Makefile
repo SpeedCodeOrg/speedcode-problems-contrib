@@ -14,16 +14,16 @@ endif
 
 
 compile_all_benchmarks:
-	$(MAKE) -j 8 -f ${UTILS_DIR}/Makefile.common.contest compile_all_benchmarks
+	$(MAKE) -j 8 -f ${SANDBOX_PREFIX}/Makefile.common.contest compile_all_benchmarks
 
 benchmark: compile_all_benchmarks
-	$(MAKE)  -f ${UTILS_DIR}/Makefile.common.contest $@
+	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 #export EXTRA_ARGUMENTS=${EXTRA_ARGUMENTS}
 %:
-	$(MAKE)  -f ${UTILS_DIR}/Makefile.common.contest $@
+	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 
 default:
-	$(MAKE)  -f ${UTILS_DIR}/Makefile.common.contest
+	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 ############################################################################
 ## Compilation and linking flags
 #

@@ -19,7 +19,7 @@ class Graph : public BaseGraph {
             // destructor logic.
             // If you perform any memory allocations with malloc, new, etc. you must free
             //   them here to avoid memory leaks.
-            printf("Destructor was called\n");
+            //printf("Destructor was called\n");
         }
 
         void SSSP(vidType source, weight_type *distances) {
