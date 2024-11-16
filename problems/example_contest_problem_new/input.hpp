@@ -26,11 +26,28 @@ class ProblemInput {
 public:
 
     void construct_from_coo(std::vector<int64_t>& input_row, std::vector<int64_t>& input_col, std::vector<double>& input_weight) {
+	// Verification code.
+	#if 0
+	// verify that the graph is symmetric.
+	printf("verifying that the coo code is valid");
+	    std::map<std::tuple<int,int>, double> edges;
+	for (int i = 0; i < input_row.size(); i++) {
+		edges[std::make_tuple(input_row[i], input_col[i])] = input_weight[i];	
+	}
+	for (int i = 0; i < input_row.size(); i++) {
+		if (edges.find(std::make_tuple(input_col[i], input_row[i])) == edges.end()) {
+			printf("Error the graph is not symmetric\n");
+		} else if (edges[std::make_tuple(input_col[i], input_row[i])] != edges[std::make_tuple(input_row[i], input_col[i])]) {
+			printf("Error the graph weights are not symmetric\n");
+		}
+	}
+	#endif
+
         // convert COO form to CSR format.
-        N = input_row[0];
+        N = input_row[0]+1;
         for (int64_t i = input_row.size(); --i >= 0;) {
-            if (input_row[i] > N) {
-                N = input_row[i];
+            if (input_row[i]+1 > N) {
+                N = input_row[i]+1;
             }
         }
         M = input_col.size();
@@ -42,14 +59,36 @@ public:
 
         for (size_t i = 0; i < input_row.size(); i++) {
             vidType src = input_row[i];
+	    //printf("%d\n", src);
             vidType dst = input_col[i]; 
             col[i] = dst;
-            rowptr[src] += 1;
+            rowptr[src+1] += 1;
             weights[i] = input_weight[i];
         }
         for (size_t i = 1; i < N+1; i++) {
             rowptr[i] += rowptr[i-1];
         }
+
+	// verification code.
+	#if 0
+        std::map<std::tuple<int,int>, double> edges2;
+	for (int i = 0; i < N; i++) {
+		for (int j = rowptr[i]; j < rowptr[i+1]; j++) {
+			edges2[std::make_tuple(i, col[j])] = weights[j];
+		}
+	}
+	for (int i = 0; i < N; i++) {
+		for (int j = rowptr[i]; j < rowptr[i+1]; j++) {
+			if (edges2.find(std::make_tuple(col[j], i)) == edges2.end()) {
+				printf("Error the graph is not symmetric %d,%d\n", col[j], i);
+			} else if (edges2[std::make_tuple(col[j], i)] != edges2[std::make_tuple(i, col[j])]) {
+				printf("Error the graph weights are not symmetric\n");
+			}
+		}
+	}
+	#endif
+
+
     }
 
     void construct_from_file(std::string& filename) {
