@@ -17,30 +17,9 @@ class Graph : public BaseGraph {
         Graph(eidType* rowptr, vidType* col, weight_type* weights, uint64_t N, uint64_t M) :
         rowptr(rowptr), col(col), weights(weights), N(N), M(M) {}
         ~Graph() {
-		data_pointer = (void*)col;
         }
 
         void SSSP(vidType source, weight_type *distances) {
-
-	  #if 0
-	  std::map<std::tuple<int,int>, float> edges;
-          for (int i = 0; i < N; i++) {
-            for (int j = rowptr[i]; j < rowptr[i+1]; j++) {
-		edges[std::make_tuple(i,col[j])] = weights[j]; 
-            }
-          }
-          for (int i = 0; i < N; i++) {
-            for (int j = rowptr[i]; j < rowptr[i+1]; j++) {
-		//edges[std::make_tuple(i,col[j])] = weights[j]; 
-		if (edges.find(std::make_tuple(col[j],i)) == edges.end()) {
-			printf("SOL Error the graph is not symmetric!\n");
-		} else if (edges[std::make_tuple(col[j],i)] != weights[j]) {
-			printf("SOL Error the graph weights are not symmetric %f, %f\n", edges[std::make_tuple(col[j],i)], weights[j]);
-		}
-            }
-          }
-	  #endif
-
             std::priority_queue<WN, std::vector<WN>, std::greater<WN>> mq;
             distances[source] = 0;
             mq.push(std::make_pair(0, source));

@@ -118,3 +118,19 @@ static void export_benchmark_results(ankerl::nanobench::Bench& bencher) {
   std::fstream s{filename, s.trunc | s.in | s.out};
   ankerl::nanobench::render(ankerl::nanobench::templates::json(), bencher, s);
 }
+
+static void export_benchmark_input_results(ankerl::nanobench::Bench& bencher, std::string inp_name, uint64_t time_nanoseconds) {
+  auto env_name = getenv("DYNAMIC_BENCHMARK_NAME");
+  std::string bench_name;
+  if (env_name == NULL) {
+	  bench_name = "Error";//"benchmark_" + std::string((char*)BENCHMARK_NAME_SUBMISSION);
+  } else {
+         bench_name = std::string(env_name);
+  }
+
+  std::string dynamic_benchmark(bench_name);
+  std::string filename = dynamic_benchmark+"_"+inp_name+".json"; 
+  //std::string filename{BENCHMARK_RESULTS_FILE};
+  std::fstream s{filename, s.trunc | s.in | s.out};
+  ankerl::nanobench::render(ankerl::nanobench::templates::json(), bencher, s);
+}

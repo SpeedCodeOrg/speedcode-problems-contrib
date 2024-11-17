@@ -8,7 +8,27 @@ import sys
 from prettytable import PrettyTable
 from sandbox_utils.context import ROOT_DIR
 
+
 def combine_benchmarks(files):
+
+    input_targets_str = os.getenv("DYNAMIC_INPUT_TARGETS")
+    if input_targets_str != None:
+        input_targets = [x.replace('.json','').strip() for x in input_targets_str.split(',')]
+        for f in files:
+            if Path(ROOT_DIR / f"benchmark_{f}.json").exists():
+                continue
+            temp_results = []
+            for target in input_targets:
+                fname = f"benchmark_{f}_{target}.json"
+                obj = json.load(open(ROOT_DIR / fname))
+                for result in obj['results']:
+                    temp_results.append(result)
+
+            new_data = dict()
+            new_data['results'] = temp_results
+            open(ROOT_DIR / f'benchmark_{f}.json','w+').write(json.dumps(new_data))
+
+
     combined_results = []
     x = PrettyTable()
     x.field_names = ["Code", "Time per operation (ns)", "Operations / sec "]

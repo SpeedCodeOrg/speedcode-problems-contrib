@@ -130,8 +130,8 @@ TEST_CASE("Benchmark", "[benchmark]") {
   auto inputs = get_inputs();
   _tm2.stop();
   _tm2.reportTotal("loading the inputs");
-  auto bencher = get_bencher(5,1); // Run for 10 epochs with at least 10 iterations each.
   for (int i = 0; i < inputs.size(); i++) {
+     auto bencher = get_bencher(5,1); // Run for 10 epochs with at least 10 iterations each.
      //printf("%s\n", std::get<0>(inputs[i]).c_str());
      std::string inp_name = std::get<0>(inputs[i]);
      bool found_target = false;
@@ -184,10 +184,12 @@ TEST_CASE("Benchmark", "[benchmark]") {
      double time_sec = (total_nanoseconds*1e-9);// / iter_count;
      double time_nansec = (total_nanoseconds*1.0);// / iter_count;
 
+     export_benchmark_input_results(bencher, inp_name, total_nanoseconds);
+
      printf("Total time: %f sec, %f nanoseconds\n", time_sec, time_nansec);
   }
 
-  export_benchmark_results(bencher);
+  //export_benchmark_results(bencher);
 }
 
 } // end Driver namespace
