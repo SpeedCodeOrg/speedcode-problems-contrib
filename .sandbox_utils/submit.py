@@ -75,7 +75,17 @@ if __name__ == '__main__':
         response = eval(response)
         keys = response['fields']
         url = response['url']
+
+        problem_const_id = response['fields']['key'].split('/')[-1].strip().replace('.tar','').strip()
+
         with open(Path('.submissions') / "testsub.tar", 'rb') as f:
             files = {'file' : ('testsub.tar', f)}
             http_response = requests.post(url, data=keys, files=files)
             print(http_response)
+
+
+        print("###################################################################################")
+        print("###################################################################################")
+        print(f"URL: https://speedcode.org/ide/contest.html?{problem_const_id}")
+        print("###################################################################################")
+        print("###################################################################################")

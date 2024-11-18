@@ -1,0 +1,10 @@
+{"name":"CONTESTTEST30",
+"const_id":"CONTESTTEST30",
+"title":"CONTESTTEST30",
+"location":"beta-sort-strings",
+"github_url":"git@github.com:SpeedCodeOrg/speedcode-problems.git",
+"short_description":"Sort a list of strings",
+"max_tiers":2,
+"tier_benchmark":"[tier1]",
+"public": true,
+"tags":"#sorting,#divide-and-conquer,#parallelism"}
