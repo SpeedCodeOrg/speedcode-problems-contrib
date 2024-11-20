@@ -16,8 +16,7 @@ class Graph : public BaseGraph {
     public:
         Graph(eidType* rowptr, vidType* col, weight_type* weights, uint64_t N, uint64_t M) :
         rowptr(rowptr), col(col), weights(weights), N(N), M(M) {}
-        ~Graph() {
-        }
+        ~Graph() {}
 
         void SSSP(vidType source, weight_type *distances) {
             std::priority_queue<WN, std::vector<WN>, std::greater<WN>> mq;

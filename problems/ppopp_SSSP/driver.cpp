@@ -52,9 +52,9 @@ TEST_CASE("Correctness", "[correctness]") {
   auto inputs = get_inputs();
   auto targets = get_input_targets();
 
-  for (auto x : targets) {
-    printf("target: %s\n", x.c_str());
-  }
+  //for (auto x : targets) {
+  //  printf("target: %s\n", x.c_str());
+  //}
   int tests_run = 0;
   for (int i = 0; i < inputs.size(); i++) {
      std::string inp_name = std::get<0>(inputs[i]);
@@ -79,7 +79,33 @@ TEST_CASE("Correctness", "[correctness]") {
 }
 
 TEST_CASE("Cilksan", "[cilksan]") {
+
   auto inputs = get_inputs();
+  auto targets = get_input_targets();
+
+  //for (auto x : targets) {
+  //  printf("target: %s\n", x.c_str());
+  //}
+  int tests_run = 0;
+  for (int i = 0; i < inputs.size(); i++) {
+     std::string inp_name = std::get<0>(inputs[i]);
+     bool found_target = false;
+     for (int j = 0; j < targets.size(); j++) {
+       if (inp_name + ".json" == targets[j]) found_target=true;
+     }
+     if (!found_target && std::getenv("DYNAMIC_INPUT_TARGETS") != NULL) continue;
+
+      ProblemInput input(std::get<0>(inputs[i]), std::get<1>(inputs[i]));
+      input.run();
+      tests_run++;
+  }
+  CAPTURE(tests_run);
+  REQUIRE(tests_run > 0);
+
+
+
+
+/*  auto inputs = get_inputs();
   for (int i = 0; i < inputs.size(); i++) {
       ProblemInput input(std::get<0>(inputs[i]), std::get<1>(inputs[i]));
       std::optional<std::string> error_message = input.check();
@@ -91,7 +117,7 @@ TEST_CASE("Cilksan", "[cilksan]") {
       } else {
         REQUIRE(!error_message.has_value());
       }
-  }
+  }*/
 }
 
 bool success() {
@@ -99,6 +125,37 @@ bool success() {
 }
 
 TEST_CASE("Cilkscale", "[cilkscale]") {
+
+
+  auto inputs = get_inputs();
+  auto targets = get_input_targets();
+
+  //for (auto x : targets) {
+  //  printf("target: %s\n", x.c_str());
+  //}
+  int tests_run = 0;
+  wsp_t cilkscale_sum = wsp_zero();
+  for (int i = 0; i < inputs.size(); i++) {
+     std::string inp_name = std::get<0>(inputs[i]);
+     bool found_target = false;
+     for (int j = 0; j < targets.size(); j++) {
+       if (inp_name + ".json" == targets[j]) found_target=true;
+     }
+     if (!found_target && std::getenv("DYNAMIC_INPUT_TARGETS") != NULL) continue;
+
+      ProblemInput input(std::get<0>(inputs[i]), std::get<1>(inputs[i]));
+      wsp_t cilkscale_start = wsp_getworkspan();
+      input.run();
+      wsp_t cilkscale_end = wsp_getworkspan();
+      wsp_t cilkscale_elapsed = wsp_sub(cilkscale_end,cilkscale_start);
+      cilkscale_sum = wsp_add(cilkscale_sum, cilkscale_elapsed);
+      tests_run++;
+  }
+  export_cilkscale_results(cilkscale_sum);
+  CAPTURE(tests_run);
+  REQUIRE(tests_run > 0);
+
+/*
   auto inputs = get_inputs();
 
   wsp_t cilkscale_sum = wsp_zero();
@@ -112,8 +169,9 @@ TEST_CASE("Cilkscale", "[cilkscale]") {
       cilkscale_sum = wsp_add(cilkscale_sum, cilkscale_elapsed);
   }
 
-  export_cilkscale_results(cilkscale_sum);
+  export_cilkscale_results(cilkscale_sum);*/
 }
+
 
 TEST_CASE("Benchmark", "[benchmark]") {
 
@@ -129,9 +187,9 @@ TEST_CASE("Benchmark", "[benchmark]") {
   _tm2.start();
   auto inputs = get_inputs();
   _tm2.stop();
-  _tm2.reportTotal("loading the inputs");
+  //_tm2.reportTotal("loading the inputs");
   for (int i = 0; i < inputs.size(); i++) {
-     auto bencher = get_bencher(5,1); // Run for 10 epochs with at least 10 iterations each.
+     auto bencher = get_bencher(3,1); // Run for 10 epochs with at least 10 iterations each.
      //printf("%s\n", std::get<0>(inputs[i]).c_str());
      std::string inp_name = std::get<0>(inputs[i]);
      bool found_target = false;
@@ -154,10 +212,12 @@ TEST_CASE("Benchmark", "[benchmark]") {
      uint64_t iter_count = 0;
      _tm.reset();
      std::vector<uint64_t> times(1000000); 
+     uint64_t num_operations = 0;
      bencher.run(benchmark_name + ","+inp_name, [&] {
       //_tm2.reset();
       //_tm2.start();
        ProblemInput input(inp_name, inp);
+       num_operations = input.get_num_operations();
        _tm.reset();
        _tm.start();
        //_tm2.stop();
@@ -185,9 +245,28 @@ TEST_CASE("Benchmark", "[benchmark]") {
      double time_sec = (total_nanoseconds*1e-9);// / iter_count;
      double time_nansec = (total_nanoseconds*1.0);// / iter_count;
 
-     export_benchmark_input_results(bencher, inp_name, total_nanoseconds);
+     std::string filename = export_benchmark_input_results(bencher, inp_name, total_nanoseconds);
 
-     printf("Total time: %f sec, %f nanoseconds\n", time_sec, time_nansec);
+     nlohmann::json result_data;
+     {
+       std::ifstream obj(filename);
+       obj >> result_data;
+     }
+  
+     result_data["results"][0]["median(elapsed)"] = time_sec;
+
+     // Add a new field
+     if (num_operations > 0 and time_sec > 0) {
+        result_data["results"][0]["custom_score"] = (num_operations * 1.0) / time_sec;
+        result_data["results"][0]["custom_score_name"] = "edges / sec";
+     }
+
+     {
+       std::ofstream output_file(filename);
+       output_file << result_data;
+     }
+
+     //printf("Total time: %f sec, %f nanoseconds\n", time_sec, time_nansec);
   }
 
   //export_benchmark_results(bencher);

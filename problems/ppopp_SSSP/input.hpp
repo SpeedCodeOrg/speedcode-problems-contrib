@@ -24,7 +24,9 @@ class ProblemInput {
     std::vector<std::vector<weight_type>> distances;
     BaseGraph* graph;
 public:
-
+    uint64_t get_num_operations() {
+	return M;
+    }
     void construct_from_coo(std::vector<int64_t>& input_row, std::vector<int64_t>& input_col, std::vector<double>& input_weight) {
 	// Verification code.
 	#if 0
@@ -107,7 +109,7 @@ public:
         s.read((char*)col, sizeof(vidType)*M);
         s.read((char*)weights, sizeof(weight_type)*M);
         s.close();
-        printf("Successfully deserialized the data. %llu, %llu\n", N, M);
+        //printf("Successfully deserialized the data. %llu, %llu\n", N, M);
     }
 
     ProblemInput(std::string inp_name, quicktype::Inputschema& _input, decltype(initialize_graph) init = initialize_graph) {
@@ -211,7 +213,7 @@ public:
         s.read((char*)col, sizeof(vidType)*M);
         s.read((char*)weights, sizeof(weight_type)*M);
         s.close();
-        printf("Successfully deserialized the data. %d, %d\n", N, M);
+        //printf("Successfully deserialized the data. %d, %d\n", N, M);
     }
 
     // old test function.
@@ -245,7 +247,7 @@ public:
             assert(col_test[i] == col[i] && "Col doesn't match.");
             assert(weights_test[i] == weights[i] && "weights doesn't match.");
         }
-        printf("Successfully deserialized the data. %d, %d\n", N_test, M_test);
+        //printf("Successfully deserialized the data. %d, %d\n", N_test, M_test);
     }
 
     ~ProblemInput() {

@@ -18,7 +18,7 @@ std::vector<std::tuple<std::string, quicktype::Inputschema>> get_inputs() {
   }
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
     if (entry.path().has_extension() && entry.path().extension() == ".json") {
-	    std::cout << entry.path() <<std::endl;
+	    //std::cout << entry.path() <<std::endl;
 	    if (entry.path().stem() == "user_input") continue;
       std::ifstream in(entry.path());
       nlohmann::json j;
@@ -137,7 +137,7 @@ static void export_benchmark_results(ankerl::nanobench::Bench& bencher) {
   ankerl::nanobench::render(ankerl::nanobench::templates::json(), bencher, s);
 }
 
-static void export_benchmark_input_results(ankerl::nanobench::Bench& bencher, std::string inp_name, uint64_t time_nanoseconds) {
+static std::string export_benchmark_input_results(ankerl::nanobench::Bench& bencher, std::string inp_name, uint64_t time_nanoseconds) {
   auto env_name = getenv("DYNAMIC_BENCHMARK_NAME");
   std::string bench_name;
   if (env_name == NULL) {
@@ -151,4 +151,5 @@ static void export_benchmark_input_results(ankerl::nanobench::Bench& bencher, st
   //std::string filename{BENCHMARK_RESULTS_FILE};
   std::fstream s{filename, s.trunc | s.in | s.out};
   ankerl::nanobench::render(ankerl::nanobench::templates::json(), bencher, s);
+  return filename;
 }

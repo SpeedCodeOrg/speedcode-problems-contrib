@@ -75,10 +75,10 @@ if __name__ == "__main__":
       #print(input)
       if hasattr(input.graph, 'data_file_format') and input.graph.data_file_format:
         manifest_items.append(\
-           PRM_DataManifestItem(input_target=f, data_directory="ppopp-graphs", data_files=[input.graph.filename]))
+           PRM_DataManifestItem(input_target=f, data_directory="ppopp-graphs-v2", data_files=[input.graph.filename]))
         
    manifest=PRM_DataManifest(quickrun_targets=[], submission_targets=[], manifest_items=manifest_items)
-   open('data/data_manifest.json', 'w+').write(manifest.json(indent=4))
+   open('data/data_manifest.json', 'w+').write(manifest.json())
 
    quit()
 

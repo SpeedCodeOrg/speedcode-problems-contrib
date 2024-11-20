@@ -41,6 +41,9 @@ def parse_multiple_benchmarks(correctness_results, obj):
                     pagefaults=result['median(pagefaults)'],\
                     branchinstructions=result['median(branchinstructions)'],\
                     branchmisses=result['median(branchmisses)'])
+            if "custom_score" in result and "custom_score_name" in result:
+                item.custom_score = result["custom_score"]
+                item.custom_score_name = result["custom_score_name"]
             if item.function.find("benchmark_submission") != -1:
                 item.function = "Submission"
             if item.function.find("benchmark_reference") != -1:

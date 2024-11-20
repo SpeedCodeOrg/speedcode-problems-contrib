@@ -83,6 +83,8 @@ class PRM_BenchmarkResult(BaseModel):
     pagefaults: float
     branchinstructions: float
     branchmisses: float
+    custom_score : Optional[float] = None
+    custom_score_name : Optional[str] = None
 
 class PRM_Benchmark(BaseModel):
     stdout: Optional[str] = None

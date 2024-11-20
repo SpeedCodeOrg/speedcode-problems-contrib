@@ -12,7 +12,8 @@ import requests
 
 url = "http://speedcode.org/get_presigned_url"
 #url = "http://localhost:3000/get_presigned_url"
-
+orig_url = "".join(url.split("/")[:-1]).replace('https:',"https://").replace("http:", "http://")
+print(orig_url)
 # File name for staging area for tarball extraction.
 staging_area = ".tmp_staging_area"
 
@@ -86,6 +87,6 @@ if __name__ == '__main__':
 
         print("###################################################################################")
         print("###################################################################################")
-        print(f"URL: https://speedcode.org/ide/contest.html?{problem_const_id}")
+        print(f"URL: {orig_url}/ide/contest.html?{problem_const_id}")
         print("###################################################################################")
         print("###################################################################################")
