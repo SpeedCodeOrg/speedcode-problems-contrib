@@ -10,7 +10,6 @@
 #include <iostream>
 #include <fstream>
 #include <random>
-
 class ProblemInput {
     std::string inp_name;
     quicktype::Inputschema input;
@@ -23,6 +22,8 @@ class ProblemInput {
     std::vector<vidType> queries;
     std::vector<std::vector<weight_type>> distances;
     BaseGraph* graph;
+    Driver::timer timer_helper;
+    int64_t init_time = 0;
 public:
     uint64_t get_num_operations() {
 	return M;
@@ -138,7 +139,11 @@ public:
            } 
         }
 
+        timer_helper.reset();
+        timer_helper.start();
         graph = init(rowptr, col, weights, N, M);
+        timer_helper.stop();
+        init_time = timer_helper.get_total();
         
         for (int i = 0; i < 1; i++) {
             queries.push_back(i);
@@ -303,13 +308,21 @@ public:
 
     std::optional<std::string> check() {
         run();
-	release_memory_postrun();
-	auto reference_distances = distances;
-	{
-        ProblemInput reference = ProblemInput(inp_name, input, reference::initialize_graph);
-        reference.run();
-	reference_distances = reference.distances;
-	}
+
+	    release_memory_postrun();
+        int64_t reference_runtime = 0;
+        timer_helper.reset();
+	    auto reference_distances = distances;
+	    {
+           ProblemInput reference = ProblemInput(inp_name, input, reference::initialize_graph);
+
+           timer_helper.start();
+           reference.run();
+           timer_helper.stop();
+           reference_runtime = timer_helper.get_total() / queries.size();
+
+           reference_distances = reference.distances;
+	    }
 
         //ProblemInput reference = ProblemInput(this);
         for (int64_t i = 0; i < distances.size(); i++) {
@@ -319,6 +332,21 @@ public:
                     return "Incorrect value, expected distance " + std::to_string(reference_distances[i][j]) + ", but got " + std::to_string(distances[i][j]);
                 }
             }
+        }
+
+        int64_t time_limit_error = reference_runtime*2;
+        if (time_limit_error < 1e+7) {
+            time_limit_error = 1e+7;
+        }
+        int64_t time_limit_warning = reference_runtime*1.5;
+        if (reference_runtime * 2 < init_time) {
+           return "Excessive precomputation in the graph_initialize function. Reference code runtime: " + std::to_string(reference_runtime*1e-9) + " sec; " + 
+                  "graph_initialize runtime: " + std::to_string(init_time*1e-9) +" sec; Time limit for graph_initialize on this input: " + 
+                  std::to_string(time_limit_error*1e-9) + "; sec";
+        }
+        if (reference_runtime * 1.5 < init_time) {
+            std::cout << "[Warning] The graph_initialize function's runtime is close to the limit for this input. Runtime limit: "
+            << std::to_string(time_limit_error*1e-9) << " sec; Your runtime: " << std::to_string(init_time*1e-9) << " sec;";
         }
         return std::nullopt;
     }

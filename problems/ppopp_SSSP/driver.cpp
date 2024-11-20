@@ -26,12 +26,12 @@
 
 namespace Driver {
 #include "./driver_common_contest.h"
+#include "./get_time.h"
 }
 
 #include "./input.hpp"
 
 namespace Driver {
-#include "./get_time.h"
 
 TEST_CASE("Custom", "[custom]") {
   auto inputs = get_custom_inputs();
