@@ -2,6 +2,7 @@ ifeq ($(SPEEDCODE_SERVER), 1)
 	SANDBOX_CXXFLAGS = `/bin/python3 ${UTILS_DIR}/get_copts.py3` -I$(UTILS_DIR)/include -DPARLAY_OPENCILK 
 	OUTPUT_PREFIX = /box
 	SANDBOX_PREFIX = /sandbox
+	#UTILS_DIR=../.sandbox_utils
 else
 	UTILS_DIR=../.sandbox_utils
 	SANDBOX_CXXFLAGS = -O3 -I$(UTILS_DIR)/include -DPARLAY_OPENCILK
@@ -10,16 +11,23 @@ else
 endif
 
 
+
+
+
 compile_all_benchmarks:
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp
 	$(MAKE) -j 8 -f ${SANDBOX_PREFIX}/Makefile.common.contest compile_all_benchmarks
 
 benchmark: compile_all_benchmarks
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp
 	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 #export EXTRA_ARGUMENTS=${EXTRA_ARGUMENTS}
 %:
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp
 	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 
 default:
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp
 	echo "hello"
 	echo $(DYNAMIC_INPUT_TARGETS)
 	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@

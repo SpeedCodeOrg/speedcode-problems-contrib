@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
         message = '''
 ###
-### Go to http://localhost:3000/ide/index.html?user_submissions to obtain your API key.
+### Go to https://speedcode.org/contribute to obtain your API key.
 ###
         '''
         print (message)

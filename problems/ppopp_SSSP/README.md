@@ -1,3 +1,5 @@
+# SPE4IC'25 Problem 2: SSSP
+
 This is one of the test problems for the SPE4IC track of the FastCode Programming Challenge at PPoPP’25. The goal is to leverage parallelism to improve the performance for single-source shortest paths. This is not an easy task - achieving high parallelism in SSSP is highly challenging due to the irregular computation. Good luck!
 
 You can find more details about the competition on our website here:
@@ -8,10 +10,9 @@ Description about the test dataset, background overview, and scoring on the comp
 
 https://fastcode.org/events/ppopp-programming-competition/traditional/
 
-
 ## Problem statement
 
-Given a weighted graph $G=(V,E)$, and a source vertex $s\in V$, your task is to compute the shortest distance from s to all vertices in G. In this problem, all graphs are undirected with positive weights. 
+Given a weighted graph $$G=(V,E)$$, and a source vertex $$s\in V$$, your task is to compute the shortest distance from s to all vertices in $$G$$. In this problem, all graphs are undirected with positive weights. 
 
 ## Input
 
@@ -44,14 +45,14 @@ The output is an array `weight_type* distances`. For each vertex id `v` (from `0
 
 `source: 0` 
 
-(Put the image for the example graph here)
+![Example image](/images/SPE4IC25/sssp.png)
 
 
 ### Output: 
 
 `distances: [0, 1, 6, 4, 8]`
 
-## Constrains
+## Constraints
 
 The sizes of the tested graphs are given below:
 
@@ -64,23 +65,22 @@ The sizes of the tested graphs are given below:
 | Road Network 1 | 22.1M | 30.0M | Large diameter; real edge weights |
 | Road Network 2 | 87.0M | 112.9M | Large diameter; real edge weights |
 | kNN Graph | 24.9M | 158M | Large diameter; real edge weights |
-| Synthetic Sparse | 10M | 40M | Large diameter; skewed random edge weights |
+| Synthetic Sparse | 10M | 40M | Large diameter; uniform random edge weights |
 
-The synthetic dense graph is generated from Erdos-Renyi model.
-
-The synthetic sparse graph is a mesh-like planar graph. 
+The synthetic dense graph is generated from Erdos-Renyi model. The synthetic sparse graph is a mesh-like planar graph. 
 
 `|V|` = number of vertices
 
 `|E|` = number of edges
 
-All graphs are undirected. 
+All graphs are undirected. All edge weights are positive real numbers.
 
-All edge weights are positive real numbers.
-
-In the final test, the tested graphs are mostly the same as the graphs used in this problem, but with 1% of the edges changed (insertion/deletion/edge weight change). This is to avoid specific optimizations overfit to these test graphs. 
+In the final test, the tested graphs are mostly the same as the graphs used in this problem, but with 1% of the edges changed (insertion/deletion/edge weight change). The vertices will be re-ordered. This is to avoid specific optimizations overfit to these test graphs. 
 
 The final tests will also use a different set of sources from this problem. 
+
+We have special awards for outstanding solutions to specific graph types. In particular, we consider the four graphs with small diameters as one test set, and the other four large-diameter graphs as another test set. The best submission for each test set will get honorable mention awards. 
+
 
 ## Function Signature
 
@@ -94,3 +94,4 @@ You can find more details about the competition, including the test dataset, bac
 
 
 https://fastcode.org/events/ppopp-programming-competition/traditional/
+
