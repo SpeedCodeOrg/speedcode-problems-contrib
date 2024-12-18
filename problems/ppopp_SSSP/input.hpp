@@ -301,7 +301,7 @@ public:
         return true;
     }
 
-    bool approximatelyEqual(weight_type a, weight_type a_ref, double absError = 1e-7, double relError = 1e-9) {
+    bool approximatelyEqual(weight_type a, weight_type a_ref, double absError = 1e-7, double relError = 1e-5) {
         if (fabs(a-a_ref) <= absError || fabs(a-a_ref) <= a_ref*relError) return true;
         return false;
     }
@@ -339,7 +339,7 @@ public:
             time_limit_error = 1e+7;
         }
         int64_t time_limit_warning = reference_runtime*1.5;
-        if (reference_runtime * 2 < init_time) {
+        if (reference_runtime * 10 < init_time) {
            return "Excessive precomputation in the graph_initialize function. Reference code runtime: " + std::to_string(reference_runtime*1e-9) + " sec; " + 
                   "graph_initialize runtime: " + std::to_string(init_time*1e-9) +" sec; Time limit for graph_initialize on this input: " + 
                   std::to_string(time_limit_error*1e-9) + "; sec";

@@ -22,9 +22,17 @@ benchmark: compile_all_benchmarks
 	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp
 	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 #export EXTRA_ARGUMENTS=${EXTRA_ARGUMENTS}
-%:
+
+${OUTPUT_PREFIX}/solution.%:
 	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp
 	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
+
+%:
+	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
+
+
+#solution_compile:
+#	$(MAKE)  -f ${SANDBOX_PREFIX}/Makefile.common.contest $@
 
 default:
 	PYTHONPATH=`realpath ${UTILS_DIR}/../` LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib python -m sandbox_utils.detect_omp

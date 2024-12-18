@@ -4,11 +4,11 @@ This is one of the test problems for the SPE4IC track of the FastCode Programmin
 
 You can find more details about the competition on our website here:
 
-https://fastcode.org/events/ppopp-programming-competition/
+https://fastcode.org/events/fastcode-challenge/
 
 Description about the test dataset, background overview, and scoring on the competition website here:
 
-https://fastcode.org/events/ppopp-programming-competition/traditional/
+https://fastcode.org/events/fastcode-challenge/spe4ic/
 
 ## Problem statement
 
@@ -93,5 +93,10 @@ Function `void SSSP(vidType source, weight_type *distances)` takes the source ve
 You can find more details about the competition, including the test dataset, background overview, possible algorithms and optimizations, and scoring on the competition website here:
 
 
-https://fastcode.org/events/ppopp-programming-competition/traditional/
+https://fastcode.org/events/fastcode-challenge/spe4ic/
+
+## Update Log
+
+* 12/15/2024: Updates to OpenMP support. Including OpenMP header `#include <omp.h>` will cause solutions to be compiled with proper flags to link to the OpenMP runtime. 
+* 12/18/2024: Graph data has been updated to correct the weight distributions on certain graphs.
 
