@@ -334,17 +334,17 @@ public:
             }
         }
 
-        int64_t time_limit_error = reference_runtime*2;
+        int64_t time_limit_error = reference_runtime*10;
         if (time_limit_error < 1e+7) {
             time_limit_error = 1e+7;
         }
-        int64_t time_limit_warning = reference_runtime*1.5;
-        if (reference_runtime * 10 < init_time) {
+        int64_t time_limit_warning = time_limit_error*0.5;
+        if (time_limit_error < init_time) {
            return "Excessive precomputation in the graph_initialize function. Reference code runtime: " + std::to_string(reference_runtime*1e-9) + " sec; " + 
                   "graph_initialize runtime: " + std::to_string(init_time*1e-9) +" sec; Time limit for graph_initialize on this input: " + 
                   std::to_string(time_limit_error*1e-9) + "; sec";
         }
-        if (reference_runtime * 1.5 < init_time) {
+        if (time_limit_warning < init_time) {
             std::cout << "[Warning] The graph_initialize function's runtime is close to the limit for this input. Runtime limit: "
             << std::to_string(time_limit_error*1e-9) << " sec; Your runtime: " << std::to_string(init_time*1e-9) << " sec;";
         }

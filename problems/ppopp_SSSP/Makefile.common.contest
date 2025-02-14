@@ -18,12 +18,13 @@ endif
 
 
 PRE_EXTRA_FOUND_CFLAGS = cat ${OUTPUT_PREFIX}/extra_cflags
+PRE_EXTRA_FOUND_CFLAGS_SOLUTION = cat ${OUTPUT_PREFIX}/extra_cflags_solution
 PRE_EXTRA_FOUND_LDFLAGS = cat ${OUTPUT_PREFIX}/extra_ldflags
 EXTRA_FOUND_CFLAGS=$(shell $(PRE_EXTRA_FOUND_CFLAGS))
+EXTRA_FOUND_CFLAGS_SOLUTION=$(shell $(PRE_EXTRA_FOUND_CFLAGS_SOLUTION))
 EXTRA_FOUND_LDFLAGS=$(shell $(PRE_EXTRA_FOUND_LDFLAGS))
 
 COMMON_CXXFLAGS=$(EXTRA_FOUND_CFLAGS) -O3 -std=c++20 -march=native -g -gdwarf-4 `pkg-config --cflags catch2-with-main $(ABSL_DEPS)` -I${CONDA_PREFIX}/include
-
 #GDB_CMD = gdb -batch-silent -ex "run" -ex "bt" --args #gdb --args 
 #GDB_CMD = gdb --batch --return-child-result -ex "set print thread-events off" -ex "set print addr off" -ex "thread apply all bt" -ex "run" --args #gdb --args 
 GDB_CMD = gdb --batch --return-child-result -ex "set print thread-events off" -ex "set print addr off" -ex "thread apply all bt" -ex "run" -ex bt -ex continue -ex quit --args #gdb --args 
@@ -50,6 +51,10 @@ CILKSCALE_BENCH_LDFLAGS=-fcilktool=cilkscale-benchmark
 %.cilkscale : LDFLAGS+=$(CILKSCALE_LDFLAGS)
 %.cilkscale-benchmark : CXXFLAGS+=$(CILKSCALE_BENCH_CXXFLAGS)
 %.cilkscale-benchmark : LDFLAGS+=$(CILKSCALE_BENCH_LDFLAGS)
+
+$(OUTPUT_PREFIX)/solution.o : CXXFLAGS += $(EXTRA_FOUND_CFLAGS_SOLUTION)
+
+#%solution.o.% : CXXFLAGS += -std=c++17
 
 .PHONY : all clean run tiers correctness run-cilksan run-cilkscale solution.S
 
@@ -242,6 +247,7 @@ clean :
 	rm -f $(OUTPUT_PREFIX)/solution_analysis.assembly
 	rm -f $(OUTPUT_PREFIX)/solution_analysis.report_vector
 	rm -f $(OUTPUT_PREFIX)/*.skip
+	rm -f $(OUTPUT_PREFIX)/extra_cflags_solution
 	rm -f $(OUTPUT_PREFIX)/extra_cflags
 	rm -f $(OUTPUT_PREFIX)/extra_ldflags
 

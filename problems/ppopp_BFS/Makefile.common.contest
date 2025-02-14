@@ -18,8 +18,10 @@ endif
 
 
 PRE_EXTRA_FOUND_CFLAGS = cat ${OUTPUT_PREFIX}/extra_cflags
+PRE_EXTRA_FOUND_CFLAGS_SOLUTION = cat ${OUTPUT_PREFIX}/extra_cflags_solution
 PRE_EXTRA_FOUND_LDFLAGS = cat ${OUTPUT_PREFIX}/extra_ldflags
 EXTRA_FOUND_CFLAGS=$(shell $(PRE_EXTRA_FOUND_CFLAGS))
+EXTRA_FOUND_CFLAGS_SOLUTION=$(shell $(PRE_EXTRA_FOUND_CFLAGS_SOLUTION))
 EXTRA_FOUND_LDFLAGS=$(shell $(PRE_EXTRA_FOUND_LDFLAGS))
 
 COMMON_CXXFLAGS=$(EXTRA_FOUND_CFLAGS) -O3 -std=c++20 -march=native -g -gdwarf-4 `pkg-config --cflags catch2-with-main $(ABSL_DEPS)` -I${CONDA_PREFIX}/include
@@ -49,6 +51,10 @@ CILKSCALE_BENCH_LDFLAGS=-fcilktool=cilkscale-benchmark
 %.cilkscale : LDFLAGS+=$(CILKSCALE_LDFLAGS)
 %.cilkscale-benchmark : CXXFLAGS+=$(CILKSCALE_BENCH_CXXFLAGS)
 %.cilkscale-benchmark : LDFLAGS+=$(CILKSCALE_BENCH_LDFLAGS)
+
+$(OUTPUT_PREFIX)/solution.o : CXXFLAGS += $(EXTRA_FOUND_CFLAGS_SOLUTION)
+
+#%solution.o.% : CXXFLAGS += -std=c++17
 
 .PHONY : all clean run tiers correctness run-cilksan run-cilkscale solution.S
 
@@ -172,6 +178,13 @@ benchmark_solution: $(OUTPUT_PREFIX)/tmp
 	DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(VALGRIND) $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
 	PYTHONPATH=`realpath ${UTILS_DIR}/../` python -m sandbox_utils.combine_benchmark_results $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,%,$(REFERENCE_CODES)) submission
 
+submission_benchmark: $(OUTPUT_PREFIX)/tmp
+	DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(VALGRIND) $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+	#DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
+	#PYTHONPATH=`realpath ${UTILS_DIR}/../` python -m sandbox_utils.combine_benchmark_results $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,%,$(REFERENCE_CODES)) submission
+
+combine_benchmark_results: 
+	PYTHONPATH=`realpath ${UTILS_DIR}/../` python -m sandbox_utils.combine_benchmark_results $(patsubst $(SANDBOX_PREFIX)/solutions/%.cpp,%,$(REFERENCE_CODES)) submission
 
 benchmark: run_all_benchmarks $(OUTPUT_PREFIX)/tmp
 	DYNAMIC_BENCHMARK_NAME=benchmark_submission LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib:${OPENCILK_COMPILER_DIR}/lib $(VALGRIND) $(OUTPUT_PREFIX)/tmp [benchmark] --reporter XML::out=${OUTPUT_PREFIX}/result.xml --reporter TAP::out=${OUTPUT_PREFIX}/result.tap --reporter console
@@ -241,6 +254,7 @@ clean :
 	rm -f $(OUTPUT_PREFIX)/solution_analysis.assembly
 	rm -f $(OUTPUT_PREFIX)/solution_analysis.report_vector
 	rm -f $(OUTPUT_PREFIX)/*.skip
+	rm -f $(OUTPUT_PREFIX)/extra_cflags_solution
 	rm -f $(OUTPUT_PREFIX)/extra_cflags
 	rm -f $(OUTPUT_PREFIX)/extra_ldflags
 
